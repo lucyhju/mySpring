@@ -11,11 +11,20 @@ public class MyAnnotationApplicationContext {
 
     private Class configClass;
 
-    private ConcurrentHashMap initMap = new ConcurrentHashMap();
+    private ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
 
     public MyAnnotationApplicationContext(Class configClass) {
         this.configClass = configClass;
-        
+
+        scanAnnotationAndRegisterComponent(configClass);
+
+    }
+
+    /**
+     * 扫描注解并注册主键
+     * @param configClass
+     */
+    private void scanAnnotationAndRegisterComponent(Class configClass) {
         //扫描注解
         boolean isScanAnnotation = configClass.isAnnotationPresent(ComponentScan.class);
         if (isScanAnnotation) {
@@ -34,20 +43,30 @@ public class MyAnnotationApplicationContext {
                     File[] files = file.listFiles();
                     for (File f : files) {
                         String absolutePath = f.getAbsolutePath();
+
+                        if (!absolutePath.endsWith(".class")) {
+                            //跳过非class文件
+                            continue;
+                        }
+
                         absolutePath = absolutePath.replace("\\", "/");
-                        System.out.println(absolutePath);
                         //获取类名
                         String beanName = absolutePath.substring(absolutePath.indexOf(path) + path.length() + 1, absolutePath.indexOf(".class"));
                         System.out.println(beanName);
+                        //获取完整类名
+                        String completeName = packageName + "." + beanName;
+                        System.out.println(completeName);
+
 
                         //通过反射获取类文件
                         try {
-                            Class<?> clazz = classLoader.loadClass(beanName);
+                            Class<?> clazz = classLoader.loadClass(completeName);
                             if (clazz.isAnnotationPresent(Component.class)) {
                                 //注册组件
+
                             }
                         } catch (ClassNotFoundException e) {
-                            System.out.println(e);
+                            System.out.println(e.getMessage());
                         }
                     }
                 }
